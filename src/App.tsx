@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import Tesseract from 'tesseract.js'
 
 const App = () => {
@@ -8,7 +8,7 @@ const App = () => {
   const [text, setText] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  const initWorker = async () => {
+  const initWorker = useCallback(async () => {
     const worker = createWorker()
     await worker.load()
     await worker.loadLanguage('eng')
@@ -18,7 +18,8 @@ const App = () => {
       tessedit_pageseg_mode: PSM.SINGLE_LINE,
     });
     setWorker(worker)
-  }
+  }, [PSM.SINGLE_LINE, createWorker]);
+
   const initStream = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { width: 500, height: 100 },
@@ -26,7 +27,7 @@ const App = () => {
     })
     setStream(stream)
   }
-  const onRecognizeText = () => {
+  const onRecognizeText = useCallback(() => {
     const timerId = setInterval(async () => {
       if (videoRef.current === null || !worker) return
   
@@ -42,7 +43,7 @@ const App = () => {
       setText(text)
     }, 2000)
     return () => clearInterval(timerId)
-  }
+  }, [worker]);
 
   useEffect(() => {
     if (!worker) initWorker()
@@ -53,7 +54,7 @@ const App = () => {
       const clear = onRecognizeText()
       return clear
     }
-  }, [worker, stream])
+  }, [worker, stream, initWorker, onRecognizeText])
 
   return (
     <div>
